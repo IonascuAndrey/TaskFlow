@@ -1,0 +1,91 @@
+﻿@page
+@model RegisterModel
+@{
+    ViewData["Title"] = "Sign up";
+    ViewData["Name"] = "TaskFlow";
+}
+
+
+
+<div class="row justify-content-center align-items-center">
+    <div class="col-md-4">
+        <div class="register-container">
+        <h1 class="text-center mb-5" style="margin-top: 2rem; color: #0258d6;">
+            <b>
+                <i class="bi bi-bar-chart-fill"></i>
+                @ViewData["Name"]
+            </b>
+        </h1>
+        <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+                <h4 class="text-center mb-4">Sign up to continue</h4>
+            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+            <div class="form-floating mb-3">
+                <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                <label asp-for="Input.Email">Email</label>
+                <span asp-validation-for="Input.Email" class="text-danger"></span>
+            </div>
+            <div class="form-floating mb-3">
+                <input asp-for="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
+                <label asp-for="Input.Password">Password</label>
+                <span asp-validation-for="Input.Password" class="text-danger"></span>
+            </div>
+            <div class="form-floating mb-3">
+                <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
+                <label asp-for="Input.ConfirmPassword">Confirm Password</label>
+                <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+            </div>
+            <button id="registerSubmit" type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
+                <div>
+                    <p class="text-center mt-4">
+                        <a id="existing-account" asp-page="./Login" class="no-underline mx-4">Already have a TaskFlow account? Log in</a>
+                        
+                    </p>
+                </div>
+            </form>
+		</div>
+	</div>
+    </div>
+   
+
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+
+<style>
+    body {
+        background: url("https://img.freepik.com/free-vector/abstract-colorful-geometric-design_1035-18032.jpg?t=st=1734117405~exp=1734121005~hmac=251f94138b9d726e2f64f2e2c9788e72724e659372c9ed20daeb44c4a0a86956&w=1800") no-repeat center center fixed;
+        background-size: cover;
+    }
+
+    .register-container {
+        background-color: white;
+        padding: 30px;
+        border-radius: 7px;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.3);
+        overflow-y: auto;
+        max-height: 80vh;
+    }
+
+    .no-underline {
+        text-decoration: none;
+    }
+
+        .no-underline:hover {
+            text-decoration: underline;
+        }
+
+    .row {
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    html, body {
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+    }
+
+</style>
