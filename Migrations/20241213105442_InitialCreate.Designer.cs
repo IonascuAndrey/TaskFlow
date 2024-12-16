@@ -11,7 +11,7 @@ using TaskFlow.Models;
 
 namespace TaskFlow.Migrations
 {
-    [DbContext(typeof(AppDbContext))]
+    //[DbContext(typeof(AppDbContext))]
     [Migration("20241213105442_InitialCreate")]
     partial class InitialCreate
     {
