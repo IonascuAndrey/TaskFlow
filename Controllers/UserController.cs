@@ -3,11 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 using TaskFlow.Data;
 
 namespace TaskFlow.Controllers {
-    public class TasksController : Controller {
+    public class UserController : Controller {
         private readonly ApplicationDbContext db;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
-        public TasksController(
+        public UserController(
         ApplicationDbContext context,
         UserManager<ApplicationUser> userManager,
         RoleManager<IdentityRole> roleManager

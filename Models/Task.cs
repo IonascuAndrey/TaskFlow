@@ -17,7 +17,10 @@ namespace TaskFlow.Models {
         public DateTime DateEnd { get; set; }
         public string Media { get; set; }
 
+        public int ProjectId { get; set; }
+
         public virtual ICollection<ApplicationUser> Users { get; set; }
         public virtual ICollection<Comment> Comments { get; set; }
+        public virtual Project? Project { get; set; }
     }
 }
