@@ -1,0 +1,49 @@
+﻿@model TaskFlow.Models.Task
+
+<h2>Adauga Task pentru proiectul: @ViewBag.Project.Title</h2>
+
+<form asp-action="New" method="post">
+    <div class="form-group">
+        <label asp-for="Title" class="form-label"></label>
+        <input asp-for="Title" class="form-control" required />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Description" class="form-label"></label>
+        <textarea asp-for="Description" class="form-control"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Status" class="form-label"></label>
+        <input asp-for="Status" class="form-control" />
+        <span asp-validation-for="Status" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="DateStart" class="form-label"></label>
+        <input asp-for="DateStart" type="date" class="form-control" required />
+        <span asp-validation-for="DateStart" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="DateEnd" class="form-label"></label>
+        <input asp-for="DateEnd" type="date" class="form-control" />
+        <span asp-validation-for="DateEnd" class="text-danger"></span>
+    </div>
+
+    <input type="hidden" name="ProjectId" value="@ViewBag.ProjectId" />
+
+    <button type="submit" class="btn btn-primary">Adauga Task</button>
+</form>
+
+<!--<p>@ViewBag.Task.Title</p>
+<p>@ViewBag.Task.Id</p>
+ -->
+<p>@ViewBag.Task.Description</p>
+<p>@ViewBag.Task.Status</p>
+<p>@ViewBag.Task.DateStart</p>
+<p>@ViewBag.Task.DateEnd</p>
+<p>@ViewBag.Task.Media</p>
+<p>@ViewBag.Task.ProjectId</p>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

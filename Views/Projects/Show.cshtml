@@ -1,0 +1,13 @@
+﻿@model TaskFlow.Models.Project
+
+<h2>@Model.Title</h2
+<p>@Model.Description</p>
+
+<h3>Tasks</h3>
+<ul>
+    @foreach (var task in Model.Tasks)
+    {
+        <li>@task.Title</li>
+    }
+</ul>
+<a href="@Url.Action("New", "Tasks", new { projectId = Model.Id })" class="btn btn-primary">Create Task</a>

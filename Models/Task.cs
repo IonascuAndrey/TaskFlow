@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TaskFlow.Models {
     public class Task {
+
         [Key]
         public int Id { get; set; }
         [Required(ErrorMessage = "The title of the task is mandatory!")]
@@ -15,7 +16,7 @@ namespace TaskFlow.Models {
         public string Status { get; set; }
         public DateTime DateStart { get; set; }
         public DateTime DateEnd { get; set; }
-        public string Media { get; set; }
+        public string? Media { get; set; }
 
         public int ProjectId { get; set; }
 

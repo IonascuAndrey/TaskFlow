@@ -1,0 +1,44 @@
+﻿@model IEnumerable<TaskFlow.Models.Task>
+
+<h2>Task-uri pentru proiectul: @ViewBag.Project.Title</h2>
+
+@if (TempData.ContainsKey("message"))
+{
+    <div class="alert alert-success">
+        @TempData["message"]
+    </div>
+}
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Status</th>
+            <th>Date Start</th>
+            <th>Date End</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var task in Model)
+        {
+            <tr>
+                <td>@task.Title</td>
+                <td>@task.Status</td>
+                <td>@task.DateStart.ToString("dd/MM/yyyy")</td>
+                <td>@task.DateEnd.ToString("dd/MM/yyyy")</td>
+                <td>
+                    <a href="@Url.Action("Show", "Tasks", new { id = task.Id })" class="btn btn-info">Show</a>
+                    <a href="@Url.Action("Edit", "Tasks", new { id = task.Id })" class="btn btn-warning">Edit</a>
+                    <form asp-action="Delete" asp-controller="Tasks" method="post" style="display:inline;">
+                        <input type="hidden" name="id" value="@task.Id" />
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a href="@Url.Action("New", "Tasks", new { projectId = ViewBag.Project.Id })" class="btn btn-primary">Adauga task</a>
+

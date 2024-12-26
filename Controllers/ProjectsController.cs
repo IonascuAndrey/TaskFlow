@@ -21,6 +21,17 @@ namespace TaskFlow.Controllers {
         }
 
         public IActionResult Index() {
+            if (TempData.ContainsKey("message"))
+            {
+                ViewBag.Message = TempData["message"].ToString();
+            }
+
+            var projects = db.Projects
+                             .Include(p => p.Owner)
+                             .OrderBy(p => p.Title)
+                             .ToList();
+
+            ViewBag.Projects = projects;
             return View();
         }
         [HttpGet]
@@ -35,13 +46,49 @@ namespace TaskFlow.Controllers {
                 model.OwnerId = userId;
                 db.Projects.Add(model);
                 db.SaveChanges();
+                TempData["message"] = "Proiectul a fost adaugat";
+
+                //var user = await _userManager.FindByIdAsync(userId);
+                //if (user != null)
+                //{
+                //    if (! await _userManager.IsInRoleAsync(user, "Organizator"))
+                //    {
+                //        await _userManager.AddToRoleAsync(user, "Organizator");
+                //    }
+                //}
+
+
                 return RedirectToAction("Index");
             }
             catch (Exception ex) {
-                return View(ex);
+                return RedirectToAction("Index");
             }
 
             return View(model);
         }
+
+        [HttpPost]
+        public IActionResult Delete(int id)
+        {
+            var projectt = db.Projects.Find(id);
+            if (projectt != null)
+            {
+                db.Projects.Remove(projectt);
+                db.SaveChanges();
+                TempData["message"] = "Proiectul a fost sters";
+            }
+            return RedirectToAction("Index");
+        }
+
+        public IActionResult Show(int id)
+        {
+            var project = db.Projects.Include(p => p.Tasks).FirstOrDefault(p => p.Id == id);
+            if (project == null)
+            {
+                return NotFound();
+            }
+            return View(project);
+        }
+
     }
 }

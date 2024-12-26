@@ -1,34 +1,31 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+﻿
 @{
+    ViewData["Title"] = "Projects list";
 }
-<button onclick="window.location.href='@Url.Action("New", "Projects")'" class="btn custom-btn">Create new project</button>
-<style>
-    .custom-btn {
-        display: flex;
-        margin: auto;
-        background: linear-gradient(135deg, rgb(2, 88, 214), #81C784);
-        border: none;
-        color: white;
-        font-size: 1.2rem;
-        padding: 0.8rem 1.5rem;
-        border-radius: 30px;
-        transition: all 0.3s ease-in-out;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-        width: 20rem;
-        align-items: center;
-        justify-content: center;
-    }
 
-    .custom-btn:hover {
-        background: linear-gradient(135deg, #rgb(2, 88, 214), #66BB6A);
-        box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
-        transform: translateY(-2px);
-    }
+<h2>Projects List</h2>
 
-    .custom-btn:active {
-        transform: translateY(0);
-        box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
-    }
-</style>
+@if (TempData.ContainsKey("message"))
+{
+    <h3 class="text-success">@ViewBag.Message</h3>
+}
+
+<a class="btn btn-primary mb-3" asp-action="New" asp-controller="Projects">Add New Project</a>
+
+@foreach (var project in ViewBag.Projects)
+{
+    <div class="card mb-3 p-3">
+        <h4>Title: @project.Title</h4>
+        <p>Description: @project.Description</p>
+        <p>Owner: @(project.Owner?.UserName ?? "N/A")</p>
+
+        <form asp-action="Show" asp-controller="Projects" method="get" style="display:inline;">
+            <input type="hidden" name="id" value="@project.Id" />
+            <button type="submit" class="btn btn-primary btn mx-1">Show</button>
+        </form>
+        <form asp-action="Delete" asp-controller="Projects" method="post" style="display:inline;">
+            <input type="hidden" name="id" value="@project.Id" />
+            <button type="submit" class="btn btn-danger">Delete</button>
+        </form>
+    </div>
+}

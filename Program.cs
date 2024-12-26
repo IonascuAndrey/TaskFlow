@@ -5,6 +5,8 @@ using TaskFlow.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+Console.Write("helloo");
+
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
