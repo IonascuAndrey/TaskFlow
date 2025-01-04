@@ -1,7 +1,7 @@
 ﻿@using System.Security.Claims;
 @{
-    
-    ViewData["Title"] = "Projects list";
+
+    ViewData["Title"] = "Admin Dashboard";
 }
 
 <h2>Projects List</h2>
@@ -22,19 +22,15 @@
             <input type="hidden" name="id" value="@project.Id" />
             <button type="submit" class="btn btn-primary btn mx-1">Show</button>
         </form>
-        @if (project.OwnerId == User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier)
-            || User.IsInRole("Admin"))
-        {//Doar daca esti organizator
         <form asp-action="Edit" asp-controller="Projects" method="get" style="display:inline;">
             <input type="hidden" name="id" value="@project.Id" />
             <button type="submit" class="btn btn-secondary">Edit</button>
         </form>
-        }
         <form asp-action="Delete" asp-controller="Projects" method="post" style="display:inline;">
             <input type="hidden" name="id" value="@project.Id" />
             <button type="submit" class="btn btn-danger">Delete</button>
         </form>
-        
+
     </div>
 }
 
@@ -56,14 +52,14 @@
         justify-content: center;
     }
 
-    .custom-btn:hover {
-        background: linear-gradient(135deg, #rgb(2, 88, 214), #66BB6A);
-        box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
-        transform: translateY(-2px);
-    }
+        .custom-btn:hover {
+            background: linear-gradient(135deg, #rgb(2, 88, 214), #66BB6A);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
+            transform: translateY(-2px);
+        }
 
-    .custom-btn:active {
-        transform: translateY(0);
-        box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
-    }
+        .custom-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+        }
 </style>

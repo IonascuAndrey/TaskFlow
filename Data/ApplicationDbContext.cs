@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using System;
 using TaskFlow.Models;
-using Task = TaskFlow.Models.Task;
+using AppTask = TaskFlow.Models.AppTask;
 
 namespace TaskFlow.Data
 {
@@ -15,7 +15,7 @@ namespace TaskFlow.Data
 
         public DbSet<Comment> Comments { get; set; }
         public DbSet<Project> Projects { get; set; }
-        public DbSet<Task> Tasks { get; set; }
+        public DbSet<AppTask> AppTasks { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder) {
             // Configure the foreign keys

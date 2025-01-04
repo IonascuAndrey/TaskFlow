@@ -29,12 +29,21 @@
                     {
                         <div class="collapse navbar-collapse" id="navbarNav">
                             <ul class="navbar-nav">
+                                
                                 <li class="nav-item">
-                                    <a class="nav-link active" aria-current="page" href="@Url.Action("Index", "Projects")">Home</a>
+                                    <a class="nav-link active" aria-current="page" href="@Url.Action("Index", "Projects")">Dashboard</a>
                                 </li>
+                                @if (User.IsInRole("Admin"))
+                                {
+                                    <li class="nav-item">
+                                        <a class="nav-link active" aria-current="page" href="@Url.Action("Index", "Administration")">Administration Page</a>
+                                    </li>
+                                }
                             </ul>
                         </div>
                     }
+
+                    
 
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">

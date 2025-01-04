@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using TaskFlow.Models;
-using Task = TaskFlow.Models.Task;
+using AppTask = TaskFlow.Models.AppTask;
 
 public class ApplicationUser : IdentityUser {
     public string FirstName { get; set; }
@@ -9,7 +9,7 @@ public class ApplicationUser : IdentityUser {
 
     // Navigation properties for related entities (e.g., tasks, projects)
     // A user can be assigned to multiple tasks
-    public ICollection<Task>? Tasks { get; set; } // Name convention for M:M relation
+    public ICollection<AppTask>? AppTasks { get; set; } // Name convention for M:M relation
     //A user can be a part of multiple projects
     public ICollection<Project>? Projects { get; set; } // Name convention for M:M relation
     //A user can post multiple comments

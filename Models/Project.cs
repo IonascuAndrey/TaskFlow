@@ -19,7 +19,7 @@ namespace TaskFlow.Models {
         // Virtual property
         public virtual ApplicationUser? Owner { get; set; }
         public ICollection<ApplicationUser>? ApplicationUsers { get; set; } // Name convention for M:M relation
-        public ICollection<Task> Tasks { get; set; }
+        public ICollection<AppTask> AppTasks { get; set; }
     }
 
 }

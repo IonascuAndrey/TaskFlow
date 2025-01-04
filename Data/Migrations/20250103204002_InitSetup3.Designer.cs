@@ -12,8 +12,8 @@ using TaskFlow.Data;
 namespace TaskFlow.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241216210911_InitialSetup2")]
-    partial class InitialSetup2
+    [Migration("20250103204002_InitSetup3")]
+    partial class InitSetup3
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,6 +24,21 @@ namespace TaskFlow.Data.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("AppTaskApplicationUser", b =>
+                {
+                    b.Property<int>("AppTasksId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UsersId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("AppTasksId", "UsersId");
+
+                    b.HasIndex("UsersId");
+
+                    b.ToTable("AppTaskApplicationUser");
+                });
 
             modelBuilder.Entity("ApplicationUser", b =>
                 {
@@ -114,21 +129,6 @@ namespace TaskFlow.Data.Migrations
                     b.HasIndex("ProjectsId");
 
                     b.ToTable("ApplicationUserProject");
-                });
-
-            modelBuilder.Entity("ApplicationUserTask", b =>
-                {
-                    b.Property<int>("TasksId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UsersId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("TasksId", "UsersId");
-
-                    b.HasIndex("UsersId");
-
-                    b.ToTable("ApplicationUserTask");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -268,6 +268,46 @@ namespace TaskFlow.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("TaskFlow.Models.AppTask", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("DateEnd")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DateStart")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Media")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("AppTasks");
+                });
+
             modelBuilder.Entity("TaskFlow.Models.Comment", b =>
                 {
                     b.Property<int>("Id")
@@ -276,6 +316,9 @@ namespace TaskFlow.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("AppTaskId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Content")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -283,15 +326,12 @@ namespace TaskFlow.Data.Migrations
                     b.Property<DateTime>("DateAdd")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("TaskId")
-                        .HasColumnType("int");
-
                     b.Property<string>("UserId")
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TaskId");
+                    b.HasIndex("AppTaskId");
 
                     b.HasIndex("UserId");
 
@@ -326,41 +366,19 @@ namespace TaskFlow.Data.Migrations
                     b.ToTable("Projects");
                 });
 
-            modelBuilder.Entity("TaskFlow.Models.Task", b =>
+            modelBuilder.Entity("AppTaskApplicationUser", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                    b.HasOne("TaskFlow.Models.AppTask", null)
+                        .WithMany()
+                        .HasForeignKey("AppTasksId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("DateEnd")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("DateStart")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("Media")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Tasks");
+                    b.HasOne("ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UsersId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ApplicationUserProject", b =>
@@ -374,21 +392,6 @@ namespace TaskFlow.Data.Migrations
                     b.HasOne("TaskFlow.Models.Project", null)
                         .WithMany()
                         .HasForeignKey("ProjectsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("ApplicationUserTask", b =>
-                {
-                    b.HasOne("TaskFlow.Models.Task", null)
-                        .WithMany()
-                        .HasForeignKey("TasksId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ApplicationUser", null)
-                        .WithMany()
-                        .HasForeignKey("UsersId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -444,17 +447,28 @@ namespace TaskFlow.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("TaskFlow.Models.AppTask", b =>
+                {
+                    b.HasOne("TaskFlow.Models.Project", "Project")
+                        .WithMany("AppTasks")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Project");
+                });
+
             modelBuilder.Entity("TaskFlow.Models.Comment", b =>
                 {
-                    b.HasOne("TaskFlow.Models.Task", "Task")
+                    b.HasOne("TaskFlow.Models.AppTask", "AppTask")
                         .WithMany("Comments")
-                        .HasForeignKey("TaskId");
+                        .HasForeignKey("AppTaskId");
 
                     b.HasOne("ApplicationUser", "User")
                         .WithMany("Comments")
                         .HasForeignKey("UserId");
 
-                    b.Navigation("Task");
+                    b.Navigation("AppTask");
 
                     b.Navigation("User");
                 });
@@ -475,9 +489,14 @@ namespace TaskFlow.Data.Migrations
                     b.Navigation("OwnedProjects");
                 });
 
-            modelBuilder.Entity("TaskFlow.Models.Task", b =>
+            modelBuilder.Entity("TaskFlow.Models.AppTask", b =>
                 {
                     b.Navigation("Comments");
+                });
+
+            modelBuilder.Entity("TaskFlow.Models.Project", b =>
+                {
+                    b.Navigation("AppTasks");
                 });
 #pragma warning restore 612, 618
         }
