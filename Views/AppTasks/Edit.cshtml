@@ -38,17 +38,7 @@
 
     <div class="form-group">
         <label for="Media">Media</label>
-        <input type="text" class="form-control" id="Media" name="Media" value="@Model.Media" />
-    </div>
-
-    <div class="form-group">
-        <label for="ProjectId">Project</label>
-        <select class="form-control" id="ProjectId" name="ProjectId">
-            @foreach (var project in ViewData["Projects"] as List<TaskFlow.Models.Project>)
-            {
-                <option value="@project.Id" selected="@(project.Id==Model.ProjectId? "selected" : null)">Completed</option>
-            }
-        </select>
+        <input type="file" class="form-control" id="Media" name="Media" value="@Model.Media" />
     </div>
 
     <button type="submit" class="btn btn-primary">Save Changes</button>

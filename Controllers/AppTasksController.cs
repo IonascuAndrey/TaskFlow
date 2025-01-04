@@ -1,9 +1,12 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using TaskFlow.Data;
 using AppTask = TaskFlow.Models.AppTask;
+using Comment = TaskFlow.Models.Comment;
 
 namespace TaskFlow.Controllers {
     public class AppTasksController : Controller {
@@ -99,6 +102,147 @@ namespace TaskFlow.Controllers {
             return View(model);
         }
 
+        // GET: AppTask/Edit/5
+        public async Task<IActionResult> Edit(int? id) {
+            if (id == null) {
+                return NotFound();
+            }
+
+            var appTask = await db.AppTasks.FindAsync(id);
+            if (appTask == null) {
+                return NotFound();
+            }
+
+            return View(appTask);
+        }
+
+        // POST: AppTask/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, AppTask model, IFormFile Media) {
+            if (id != model.Id) {
+                return NotFound();
+            }
+
+            if (!ModelState.IsValid) {
+                return View(model);
+            }
+
+            try {
+                // Retrieve the original task from the database
+                var existingTask = await db.AppTasks.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id);
+                if (existingTask == null) {
+                    return NotFound();
+                }
+
+                // Handle Media Upload
+                if (Media != null && Media.Length > 0) {
+                    // Generate a unique file name to prevent collisions
+                    var uniqueFileName = $"{Guid.NewGuid()}_{Media.FileName}";
+                    var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+                    var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                    // Ensure the directory exists
+                    if (!Directory.Exists(uploadsFolder)) {
+                        Directory.CreateDirectory(uploadsFolder);
+                    }
+
+                    // Save the file to the uploads folder
+                    using (var stream = new FileStream(filePath, FileMode.Create)) {
+                        await Media.CopyToAsync(stream);
+                    }
+
+                    // Delete the old media file if it exists
+                    if (!string.IsNullOrEmpty(existingTask.Media)) {
+                        var oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", existingTask.Media.TrimStart('/'));
+                        if (System.IO.File.Exists(oldFilePath)) {
+                            System.IO.File.Delete(oldFilePath);
+                        }
+                    }
+
+                    // Save the new file path to the model
+                    model.Media = $"/uploads/{uniqueFileName}";
+                } else {
+                    // Preserve the existing media path if no new file is uploaded
+                    model.Media = existingTask.Media;
+                }
+
+                // Update the task in the database
+                db.Update(model);
+                await db.SaveChangesAsync();
+
+                return RedirectToAction("Show", "Projects", new { id = model.ProjectId });
+            }
+            catch (Exception ex) {
+                ModelState.AddModelError("", "An error occurred while updating the task.");
+            }
+
+            return View(model);
+        }
+        // GET: AppTasks/Show/5
+        public async Task<IActionResult> Show(int? id) {
+            if (id == null) {
+                return NotFound();
+            }
+
+            var appTask = await db.AppTasks
+                .Include(t => t.Comments) // Include related comments if they exist
+                .Include(t => t.Project) // Include the related project
+                .Include(t => t.Users) // Include assigned user (if applicable)
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (appTask == null) {
+                return NotFound();
+            }
+
+            return View(appTask);
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "User,Admin")]
+        public IActionResult Show([FromForm] Comment comment)
+        {
+            comment.DateAdd = DateTime.Now;
+
+            // preluam Id-ul utilizatorului care posteaza comentariul
+            comment.UserId = _userManager.GetUserId(User);
+
+            if (ModelState.IsValid)
+            {
+                db.Comments.Add(comment);
+                db.SaveChanges();
+                return Redirect("/AppTasks/Show/" + comment.AppTaskId);
+            }
+            else 
+            {
+                AppTask appTask = db.AppTasks
+                .Include(t => t.Comments) // Include related comments if they exist
+                .Include(t => t.Project) // Include the related project
+                .Include(t => t.Users) // Include assigned user (if applicable)
+                .Where(art => art.Id == comment.AppTaskId)
+                .First();
+
+                //return Redirect("/Articles/Show/" + comm.ArticleId);
+
+
+                return View(appTask);
+            }
+        }
+
+        public IActionResult Delete(int id) {
+            var appTask = db.AppTasks.Find(id);
+            var project = db.Projects.Find(appTask.ProjectId);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (project.OwnerId != userId && !User.IsInRole("Admin")) {
+                return Forbid(); // Nu are permisiunea
+            }
+            if (appTask != null) {
+                db.AppTasks.Remove(appTask);
+                db.SaveChanges();
+                TempData["message"] = "Task-ul a fost sters";
+            }
+            return RedirectToAction("Show", "Projects", new { id = project.Id });
+        }
 
     }
 }

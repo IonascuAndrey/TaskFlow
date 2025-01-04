@@ -1,6 +1,9 @@
-﻿namespace TaskFlow.Models {
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace TaskFlow.Models {
     public class Comment {
         public int Id { get; set; }
+        [Required(ErrorMessage = "The content of the comment is mandatory!")]
         public string Content { get; set; }
         //FK
         public int? AppTaskId { get; set; }
