@@ -69,23 +69,8 @@ namespace TaskFlow.Controllers
         [HttpPost]
         public async Task<IActionResult> New(AppTask model, IFormFile Media, List<string> SelectedUserIds)
         {
-           
             if (!ModelState.IsValid)
             {
-                var errors = ModelState.Values.SelectMany(v => v.Errors);
-                foreach (var error in errors)
-                {
-                    Console.WriteLine(error.ErrorMessage);
-                }
-
-                foreach (var key in ModelState.Keys)
-                {
-                    var state = ModelState[key];
-                    if (state.Errors.Any())
-                    {
-                        Console.WriteLine($"Field: {key}, Errors: {string.Join(", ", state.Errors.Select(e => e.ErrorMessage))}");
-                    }
-                }
                 return View(model);
             }
 
@@ -133,7 +118,7 @@ namespace TaskFlow.Controllers
                 }
 
                 // Handle Media Upload
-                if (Media != null && Media.Length > 0)
+                if (Media != null && Media.Length > 0 && model.Media != "-")
                 {
                     // Generate a unique file name to prevent collisions
                     var uniqueFileName = $"{Guid.NewGuid()}_{Media.FileName}";
@@ -197,11 +182,6 @@ namespace TaskFlow.Controllers
                 return NotFound();
             }
 
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-
             try
             {
                 // Retrieve the original task from the database
@@ -240,25 +220,32 @@ namespace TaskFlow.Controllers
                             System.IO.File.Delete(oldFilePath);
                         }
                     }
-
                     // Save the new file path to the model
                     model.Media = $"/uploads/{uniqueFileName}";
                 }
-                else
+                 else
                 {
+                    
                     // Preserve the existing media path if no new file is uploaded
                     model.Media = existingTask.Media;
                 }
 
                 // Update the task in the database
+                model.ProjectId = existingTask.ProjectId;
                 db.Update(model);
+                
                 await db.SaveChangesAsync();
 
+                TempData["message"] = "Task-ul a fost editat cu succes!";
                 return RedirectToAction("Show", "Projects", new { id = model.ProjectId });
             }
             catch (Exception ex)
             {
                 ModelState.AddModelError("", "An error occurred while updating the task.");
+            }
+
+            if (!ModelState.IsValid) {
+                return View(model);
             }
 
             return View(model);

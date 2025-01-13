@@ -38,7 +38,7 @@
         {
             <div class="task" draggable="true" data-id="@task.Id">
                <div> @task.Title</div>
-            <div>@task.Status</div>
+            
 						<div><a href="@Url.Action("Show", "AppTasks",new{id=task.Id} )" class="btn btn-primary">View</a></div>
 					</div>
                 }
@@ -50,7 +50,7 @@
         {
             <div class="task" draggable="true" data-id="@task.Id">
              <div> @task.Title</div>
-            <div>@task.Status</div>
+            
 						<div><a href="@Url.Action("Show", "AppTasks",new{id=task.Id})" class="btn btn-primary">View</a></div>
 					</div>
                 }
@@ -62,7 +62,6 @@
         {
              <div class="task" draggable="true" data-id="@task.Id">
               <div> @task.Title</div>
-            <div>@task.Status</div>
 						<div><a href="@Url.Action("Show", "AppTasks", new{id=task.Id} )" class="btn btn-primary">View</a></div>
 					</div>
 

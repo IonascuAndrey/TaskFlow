@@ -105,7 +105,7 @@ namespace TaskFlow.Controllers {
                         }
                     }
                 }
-
+                TempData["message"] = "Proiectul a fost creat cu succes!";
                 db.Projects.Add(model);
                 db.SaveChanges();
 
@@ -125,7 +125,24 @@ namespace TaskFlow.Controllers {
         [Authorize(Roles = "User,Admin")]
         [HttpPost]
         public IActionResult Delete(int id) {
-            var project = db.Projects.Find(id);
+            var project = db.Projects
+                .Include(p => p.AppTasks)
+                .ThenInclude(t => t.Comments) // Include comments for each task
+                .FirstOrDefault(p => p.Id == id);
+
+            if (project == null) {
+                return NotFound();
+            }
+
+            foreach (var task in project.AppTasks) {
+                if (task.Comments != null) {
+                    db.Comments.RemoveRange(task.Comments);
+                }
+            }
+
+            if (project.AppTasks != null) {
+                db.AppTasks.RemoveRange(project.AppTasks);
+            }
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (project.OwnerId != userId && !User.IsInRole("Admin")) {
                 return Forbid(); 
@@ -201,7 +218,7 @@ namespace TaskFlow.Controllers {
                         }
                     }
                 }
-
+                TempData["message"] = "Proiectul a fost editat cu succes!";
                 db.SaveChanges();
                 return RedirectToAction("Index");
             }

@@ -36,9 +36,11 @@
      <div class="form-group">
         <label for="users" class="form-label">Assign Users</label>
         <select id="users" name="SelectedUserIds" class="form-control select2" multiple="multiple">
-                @foreach (var user in ViewBag.Users as List<SelectListItem>)
-                {
-                    <option value="@user.Value">@user.Text</option>
+                @if (ViewBag.Users != null) {
+                    @foreach (var user in ViewBag.Users as List<SelectListItem>)
+                    {
+                        <option value="@user.Value">@user.Text</option>
+                    }
                 }
         </select>
     </div>
