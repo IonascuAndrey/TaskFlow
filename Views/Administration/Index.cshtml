@@ -3,6 +3,10 @@
 
     ViewData["Title"] = "Admin Dashboard";
 }
+@{
+    var totalImages = 22;
+    var random = new Random();
+}
 
 <h2>Projects List</h2>
 
@@ -10,56 +14,244 @@
 {
     <h3 class="text-success">@ViewBag.Message</h3>
 }
-
+<div class="background"></div>
+<div id="my-projects" class="projects-section active">
+    <h3>All projects</h3>
+    <div class="project-grid">
 @foreach (var project in ViewBag.Projects)
 {
-    <div class="card mb-3 p-3">
+    var randomImageNumber = random.Next(1, totalImages + 1);
+    var imageUrl = Url.Content($"~/images/{randomImageNumber}.jpg");
+    <div class="project-card" style="background-image: url('@imageUrl');"
+         onclick="window.location.href='@Url.Action("Show", "Projects", new { id = project.Id })'">
         <h4>Title: @project.Title</h4>
         <p>Description: @project.Description</p>
         <p>Owner: @(project.Owner?.UserName ?? "N/A")</p>
 
-        <form asp-action="Show" asp-controller="Projects" method="get" style="display:inline;">
-            <input type="hidden" name="id" value="@project.Id" />
-            <button type="submit" class="btn btn-primary btn mx-1">Show</button>
-        </form>
-        <form asp-action="Edit" asp-controller="Projects" method="get" style="display:inline;">
-            <input type="hidden" name="id" value="@project.Id" />
-            <button type="submit" class="btn btn-secondary">Edit</button>
-        </form>
-        <form asp-action="Delete" asp-controller="Projects" method="post" style="display:inline;">
-            <input type="hidden" name="id" value="@project.Id" />
-            <button type="submit" class="btn btn-danger">Delete</button>
-        </form>
+        <div class="button-group">
+           
+                <a href="@Url.Action("Edit", "Projects", new { id = project.Id })" class="btn btn-secondary">
+                    <i class="bi bi-pencil"></i>
+                </a>
 
+            <form asp-action="Delete" asp-controller="Projects" method="post" class="project-form">
+                <input type="hidden" name="id" value="@project.Id" />
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </form>
+        </div>
     </div>
-}
+        }
+    </div>
+</div>
 
 <button onclick="window.location.href='@Url.Action("New", "Projects")'" class="btn custom-btn">Create new project</button>
 <style>
-    .custom-btn {
-        display: flex;
-        margin: auto;
-        background: linear-gradient(135deg, rgb(2, 88, 214), #81C784);
-        border: none;
-        color: white;
-        font-size: 1.2rem;
-        padding: 0.8rem 1.5rem;
-        border-radius: 30px;
-        transition: all 0.3s ease-in-out;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-        width: 20rem;
-        align-items: center;
-        justify-content: center;
+    .btn-simple {
+        background-color: transparent; 
+        border: 2px solid #007bff;
+        padding: 8px 15px;
+        font-size: 1.5rem !important; 
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.1s ease; 
     }
 
-        .custom-btn:hover {
-            background: linear-gradient(135deg, #rgb(2, 88, 214), #66BB6A);
-            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
-            transform: translateY(-2px);
+        .btn-simple:hover {
+            font-weight: bold;
+            text-decoration: underline; 
         }
 
-        .custom-btn:active {
-            transform: translateY(0);
-            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+        .btn-simple i {
+            margin-right: 8px; 
         }
+
+    .projects-container {
+        display: flex;
+        flex-direction: column;
+        gap: 40px; 
+    }
+
+    .section-buttons {
+        margin-bottom: 20px;
+        display: flex;
+        gap: 10px;
+    }
+
+    .projects-section {
+        display: none;
+    }
+
+        .projects-section.active {
+            display: block; 
+        }
+
+    .project-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr); 
+        gap: 30px; 
+    }
+
+    .project-card {
+        background-size: cover;
+        background-position: center;
+        color: white;
+        border-radius: 8px;
+        padding: 15px;
+        height: 180px; 
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        position: relative; 
+        cursor: pointer;
+        transition: transform 0.3s ease, height 0.3s ease; 
+    }
+
+        .project-card:hover {
+            transform: scale(1.02);
+            padding-bottom: 50px;
+            transition: transform 0.3s ease, padding-bottom 0.3s ease;
+        }
+
+        .project-card .text-content {
+            flex-grow: 1; 
+            transition: transform 0.3s ease, margin-bottom 0.3s ease;
+        }
+
+        .project-card:hover .text-content {
+            transform: translateY(-20px);
+            margin-bottom: 40px;
+            align-self: flex-start;
+        }
+
+        .project-card .button-group {
+            display: flex;
+            gap: 10px;
+            position: absolute;
+            bottom: 10px; 
+            left: 10px;
+            right: 10px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .project-card:hover .button-group {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .project-card .button-group .btn-secondary {
+            flex: 1; 
+            text-align: center;
+            border: 2px solid #59b5f7; 
+            background-color: transparent; 
+            color: #59b5f7; 
+            padding: 8px 15px;
+            font-size: 0.9rem;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease, color 0.3s ease; 
+        }
+
+        .project-card .button-group .btn-danger {
+            flex: 1; 
+            text-align: center;
+            border: 2px solid #ff2c2c; 
+            background-color: transparent; 
+            color: #ff2c2c; 
+            padding: 8px 15px;
+            font-size: 0.9rem;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease, color 0.3s ease; 
+        }
+
+        .project-card .button-group .btn i {
+            transition: color 0.3s ease; 
+        }
+
+        .project-card .button-group .btn-secondary:hover {
+            background-color: #59b5f7; 
+            color: white; 
+        }
+
+        .project-card .button-group .btn-danger:hover {
+            background-color: #ff2c2c; 
+            color: white; 
+        }
+
+        .project-card .button-group .btn:hover i {
+            color: white; 
+        }
+
+    .project-form {
+        display: inline-block; 
+    }
+
+    .btn {
+        padding: 8px 15px;
+        font-size: 0.9rem;
+        border-radius: 5px;
+        border: none;
+        cursor: pointer;
+        text-align: center;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .btn-secondary {
+        background-color: rgb(255, 242, 62);
+        color: white;
+    }
+
+    .btn-danger {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .btn-primary {
+        background-color: transparent;
+        border: 2px solid #007bff;
+        padding: 8px 15px;
+        font-size: 0.9rem;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+        .btn-primary.active {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-primary:not(.active) {
+            background-color: transparent;
+            color: #007bff;
+            border: 2px solid #007bff;
+        }
+
+    .background {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url('/wallpapers/fundal.jpg');
+        background-size: cover;
+        background-position: center center;
+        filter: blur(8px);
+        z-index: -1;
+    }
 </style>

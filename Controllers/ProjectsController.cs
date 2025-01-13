@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using TaskFlow.Data;
@@ -9,6 +11,7 @@ using TaskFlow.Models;
 
 namespace TaskFlow.Controllers {
     public class ProjectsController : Controller {
+
         private readonly ApplicationDbContext db;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
@@ -27,38 +30,61 @@ namespace TaskFlow.Controllers {
                 ViewBag.Message = TempData["message"].ToString();
             }
             var userId = _userManager.GetUserId(User);
+
+            var allProjects = db.Projects.Include(p => p.ApplicationUsers).ToList();
+
+            var projectsAsOwner = allProjects.Where(p => p.OwnerId == userId).ToList();
+
+            var projectsNotOwner = allProjects
+		.Where(p => p.OwnerId != userId && p.ApplicationUsers.Any(u => u.Id == userId))
+		.ToList();
+
+			ViewBag.ProjectsAsOwner = projectsAsOwner;
+            ViewBag.ProjectsNotOwner = projectsNotOwner;
+
+
             var userProjects = db.Projects
                 .Include(p => p.Owner)
                 .Where(p => p.OwnerId == userId || p.ApplicationUsers.Any(u => u.Id == userId))
                 .ToList();
 
             ViewBag.Projects = userProjects;
-            return View();
+            return View(allProjects);
         }
         [Authorize(Roles = "User,Admin")]
         [HttpGet]
-        public IActionResult New() {
-            var users = db.Users.Select(user => new SelectListItem {
-                Value = user.Id,
-                Text = user.UserName
-            }).ToList();
+        public async Task<IActionResult> New()
+        {
+            var users = await db.Users.ToListAsync();
 
-            ViewBag.Users = users;
+            var nonAdmins = new List<SelectListItem>();
 
-            return View();
+            foreach (var user in users)
+            {
+                if (!(await _userManager.IsInRoleAsync(user, "Admin")))
+                {
+                    nonAdmins.Add(new SelectListItem
+                    {
+                        Value = user.Id,
+                        Text = user.UserName
+                    });
+                }
+            }
+
+            ViewBag.Users = nonAdmins;
+
+
+            return View(); 
         }
         [Authorize(Roles = "User,Admin")]
         [HttpPost]
-        public IActionResult New(Project model, List<string> SelectedUserIds) {
+        public async Task<IActionResult> New(TaskFlow.Models.Project model, List<string> SelectedUserIds) {
             try {
-                // Get the current user's ID and assign it as the owner of the project
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 model.OwnerId = userId;
 
-                // Initialize the ApplicationUsers collection if null
                 model.ApplicationUsers ??= new List<ApplicationUser>();
 
-                // Add the selected users to the project's ApplicationUsers collection
                 if (SelectedUserIds != null && SelectedUserIds.Any()) {
                     foreach (var selectedUserId in SelectedUserIds) {
                         var user = db.Users.Find(selectedUserId);
@@ -67,19 +93,28 @@ namespace TaskFlow.Controllers {
                         }
                     }
                 }
+                var adminRole = await _roleManager.FindByNameAsync("Admin");
+                if (adminRole != null)
+                {
+                    var adminUsers = await _userManager.GetUsersInRoleAsync(adminRole.Name);
+                    foreach (var admin in adminUsers)
+                    {
+                        if (!model.ApplicationUsers.Any(u => u.Id == admin.Id)) 
+                        {
+                            model.ApplicationUsers.Add(admin);
+                        }
+                    }
+                }
 
-                // Add the project to the database
                 db.Projects.Add(model);
                 db.SaveChanges();
 
                 return RedirectToAction("Index");
             }
             catch (Exception ex) {
-                // Log or handle the exception as needed
                 ModelState.AddModelError("", "An error occurred while saving the project.");
             }
 
-            // If something goes wrong, repopulate the dropdown list for users
             ViewBag.Users = db.Users.Select(user => new SelectListItem {
                 Value = user.Id,
                 Text = user.UserName
@@ -93,9 +128,11 @@ namespace TaskFlow.Controllers {
             var project = db.Projects.Find(id);
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (project.OwnerId != userId && !User.IsInRole("Admin")) {
-                return Forbid(); // Nu are permisiunea
+                return Forbid(); 
             }
             if (project != null) {
+                var appTasks = db.AppTasks.Where(t => t.ProjectId == id).ToList();
+                db.AppTasks.RemoveRange(appTasks);
                 db.Projects.Remove(project);
                 db.SaveChanges();
                 TempData["message"] = "Proiectul a fost sters";
@@ -104,7 +141,8 @@ namespace TaskFlow.Controllers {
         }
         [Authorize(Roles = "User,Admin")]
         public IActionResult Show(int id) {
-            var project = db.Projects.Include(p => p.AppTasks).FirstOrDefault(p => p.Id == id);
+            var project = db.Projects.Include(p => p.AppTasks).Include(p => p.ApplicationUsers).FirstOrDefault(p => p.Id == id);
+
             if (project == null) {
                 return NotFound();
             }
@@ -123,10 +161,9 @@ namespace TaskFlow.Controllers {
             }
 
             if (project.OwnerId != userId && !User.IsInRole("Admin")) {
-                return Forbid(); // Nu are permisiunea
+                return Forbid(); 
             }
 
-            // Populate the list of users
             ViewBag.Users = db.Users.Select(user => new SelectListItem {
                 Value = user.Id,
                 Text = user.UserName
@@ -136,7 +173,7 @@ namespace TaskFlow.Controllers {
         }
 
         [HttpPost]
-        public IActionResult Edit(Project model, List<string> SelectedUserIds) {
+        public IActionResult Edit(TaskFlow.Models.Project model, List<string> SelectedUserIds) {
             try {
                 var userId_ = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 var project = db.Projects
@@ -151,12 +188,10 @@ namespace TaskFlow.Controllers {
                     return Forbid();
                 }
 
-                // Update basic fields
                 project.Title = model.Title;
                 project.Description = model.Description;
 
-                // Update associated users
-                project.ApplicationUsers.Clear(); // Remove existing relationships
+                project.ApplicationUsers.Clear(); 
 
                 if (SelectedUserIds != null && SelectedUserIds.Any()) {
                     foreach (var userId in SelectedUserIds) {
@@ -171,11 +206,9 @@ namespace TaskFlow.Controllers {
                 return RedirectToAction("Index");
             }
             catch (Exception ex) {
-                // Handle exceptions
                 ModelState.AddModelError("", "An error occurred while updating the project.");
             }
 
-            // If something goes wrong, repopulate the dropdown
             ViewBag.Users = db.Users.Select(user => new SelectListItem {
                 Value = user.Id,
                 Text = user.UserName
@@ -183,5 +216,7 @@ namespace TaskFlow.Controllers {
 
             return View(model);
         }
-    }
+		
+
+	}
 }

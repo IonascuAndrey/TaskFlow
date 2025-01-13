@@ -1,15 +1,22 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Humanizer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration.UserSecrets;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using TaskFlow.Data;
+using TaskFlow.Models;
 using AppTask = TaskFlow.Models.AppTask;
 using Comment = TaskFlow.Models.Comment;
 
-namespace TaskFlow.Controllers {
-    public class AppTasksController : Controller {
+namespace TaskFlow.Controllers
+{
+    public class AppTasksController : Controller
+    {
         private readonly ApplicationDbContext db;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
@@ -17,30 +24,40 @@ namespace TaskFlow.Controllers {
         ApplicationDbContext context,
         UserManager<ApplicationUser> userManager,
         RoleManager<IdentityRole> roleManager
-        ) {
+        )
+        {
             db = context;
             _userManager = userManager;
             _roleManager = roleManager;
         }
 
-        public IActionResult Index() {
+        public IActionResult Index()
+        {
             return View();
         }
 
-        public IActionResult New(int projectId) {
+        public async Task<IActionResult> New(int projectId)
+        {
             var project = db.Projects.Include(p => p.ApplicationUsers)
                                       .FirstOrDefault(p => p.Id == projectId);
 
-            if (project == null) {
+            if (project == null)
+            {
                 return NotFound();
             }
-            // Punem userii in ViewBag pt select
-            ViewBag.Users = project.ApplicationUsers.Select(u => new SelectListItem {
+            var adminUserIds = await _userManager.GetUsersInRoleAsync("Admin");
+            var adminUserIdsList = adminUserIds.Select(u => u.Id).ToList();
+
+            var nonAdminUsers = project.ApplicationUsers
+            .Where(u => !adminUserIdsList.Contains(u.Id))  
+            .Select(u => new SelectListItem
+            {
                 Value = u.Id,
                 Text = u.UserName
             }).ToList();
-
-            var task = new AppTask {
+            ViewBag.Users = nonAdminUsers;
+            var task = new AppTask
+            {
                 ProjectId = projectId,
                 DateStart = DateTime.Now,
                 DateEnd = DateTime.Now.AddDays(7)
@@ -50,16 +67,22 @@ namespace TaskFlow.Controllers {
         }
 
         [HttpPost]
-        public IActionResult New(AppTask model, IFormFile Media) {
-            if (!ModelState.IsValid) {
+        public async Task<IActionResult> New(AppTask model, IFormFile Media, List<string> SelectedUserIds)
+        {
+           
+            if (!ModelState.IsValid)
+            {
                 var errors = ModelState.Values.SelectMany(v => v.Errors);
-                foreach (var error in errors) {
+                foreach (var error in errors)
+                {
                     Console.WriteLine(error.ErrorMessage);
                 }
 
-                foreach (var key in ModelState.Keys) {
+                foreach (var key in ModelState.Keys)
+                {
                     var state = ModelState[key];
-                    if (state.Errors.Any()) {
+                    if (state.Errors.Any())
+                    {
                         Console.WriteLine($"Field: {key}, Errors: {string.Join(", ", state.Errors.Select(e => e.ErrorMessage))}");
                     }
                 }
@@ -67,21 +90,65 @@ namespace TaskFlow.Controllers {
             }
 
 
-            try {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var project = db.Projects.FirstOrDefault(p => p.Id == model.ProjectId);
+
+                if (project == null)
+                {
+                    ModelState.AddModelError("", "Project not found.");
+                    return View(model);
+                }
+                var isAdmin = User.IsInRole("Admin");
+                if (project.OwnerId == userId||isAdmin)
+                {
+                    model.Users ??= new List<ApplicationUser>();
+
+                    // Add the selected users to the project's ApplicationUsers collection
+                    if (SelectedUserIds != null && SelectedUserIds.Any())
+                    {
+                        foreach (var selectedUserId in SelectedUserIds)
+                        {
+                            var user = db.Users.Find(selectedUserId);
+                            if (user != null)
+                            {
+                                model.Users.Add(user);
+                            }
+                        }
+                    }
+                }
+
+                var adminRole = await _roleManager.FindByNameAsync("Admin");
+                if (adminRole != null)
+                {
+                    var adminUsers = await _userManager.GetUsersInRoleAsync(adminRole.Name);
+                    foreach (var admin in adminUsers)
+                    {
+                        if (!model.Users.Any(u => u.Id == admin.Id)) 
+                        {
+                            model.Users.Add(admin);
+                        }
+                    }
+                }
+
                 // Handle Media Upload
-                if (Media != null && Media.Length > 0) {
+                if (Media != null && Media.Length > 0)
+                {
                     // Generate a unique file name to prevent collisions
                     var uniqueFileName = $"{Guid.NewGuid()}_{Media.FileName}";
                     var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
                     var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
                     // Ensure the directory exists
-                    if (!Directory.Exists(uploadsFolder)) {
+                    if (!Directory.Exists(uploadsFolder))
+                    {
                         Directory.CreateDirectory(uploadsFolder);
                     }
 
                     // Save the file to the uploads folder
-                    using (var stream = new FileStream(filePath, FileMode.Create)) {
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
                         Media.CopyTo(stream);
                     }
 
@@ -95,7 +162,8 @@ namespace TaskFlow.Controllers {
 
                 return RedirectToAction("Show", "Projects", new { id = model.ProjectId });
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 ModelState.AddModelError("", "An error occurred while saving the task.");
             }
 
@@ -103,13 +171,16 @@ namespace TaskFlow.Controllers {
         }
 
         // GET: AppTask/Edit/5
-        public async Task<IActionResult> Edit(int? id) {
-            if (id == null) {
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null)
+            {
                 return NotFound();
             }
 
             var appTask = await db.AppTasks.FindAsync(id);
-            if (appTask == null) {
+            if (appTask == null)
+            {
                 return NotFound();
             }
 
@@ -119,50 +190,62 @@ namespace TaskFlow.Controllers {
         // POST: AppTask/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, AppTask model, IFormFile Media) {
-            if (id != model.Id) {
+        public async Task<IActionResult> Edit(int id, AppTask model, IFormFile Media)
+        {
+            if (id != model.Id)
+            {
                 return NotFound();
             }
 
-            if (!ModelState.IsValid) {
+            if (!ModelState.IsValid)
+            {
                 return View(model);
             }
 
-            try {
+            try
+            {
                 // Retrieve the original task from the database
                 var existingTask = await db.AppTasks.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id);
-                if (existingTask == null) {
+                if (existingTask == null)
+                {
                     return NotFound();
                 }
 
                 // Handle Media Upload
-                if (Media != null && Media.Length > 0) {
+                if (Media != null && Media.Length > 0)
+                {
                     // Generate a unique file name to prevent collisions
                     var uniqueFileName = $"{Guid.NewGuid()}_{Media.FileName}";
                     var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
                     var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
                     // Ensure the directory exists
-                    if (!Directory.Exists(uploadsFolder)) {
+                    if (!Directory.Exists(uploadsFolder))
+                    {
                         Directory.CreateDirectory(uploadsFolder);
                     }
 
                     // Save the file to the uploads folder
-                    using (var stream = new FileStream(filePath, FileMode.Create)) {
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
                         await Media.CopyToAsync(stream);
                     }
 
                     // Delete the old media file if it exists
-                    if (!string.IsNullOrEmpty(existingTask.Media)) {
+                    if (!string.IsNullOrEmpty(existingTask.Media))
+                    {
                         var oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", existingTask.Media.TrimStart('/'));
-                        if (System.IO.File.Exists(oldFilePath)) {
+                        if (System.IO.File.Exists(oldFilePath))
+                        {
                             System.IO.File.Delete(oldFilePath);
                         }
                     }
 
                     // Save the new file path to the model
                     model.Media = $"/uploads/{uniqueFileName}";
-                } else {
+                }
+                else
+                {
                     // Preserve the existing media path if no new file is uploaded
                     model.Media = existingTask.Media;
                 }
@@ -173,39 +256,69 @@ namespace TaskFlow.Controllers {
 
                 return RedirectToAction("Show", "Projects", new { id = model.ProjectId });
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 ModelState.AddModelError("", "An error occurred while updating the task.");
             }
 
             return View(model);
         }
         // GET: AppTasks/Show/5
-        public async Task<IActionResult> Show(int? id) {
-            if (id == null) {
+        public async Task<IActionResult> Show(int? id)
+        {
+            if (id == null)
+            {
                 return NotFound();
             }
-
+            var userId = _userManager.GetUserId(User);
+            var appTask2 = await db.AppTasks
+                    .Include(t => t.Comments) // Include related comments if they exist
+                    .Include(t => t.Project) // Include the related project
+                    .ThenInclude(p => p.ApplicationUsers) // Include the users assigned to the project
+                    .FirstOrDefaultAsync(t => t.Id == id);
+            var isAssignedToProjects = appTask2.Project.ApplicationUsers.Any(u => u.Id == userId);
             var appTask = await db.AppTasks
                 .Include(t => t.Comments) // Include related comments if they exist
                 .Include(t => t.Project) // Include the related project
                 .Include(t => t.Users) // Include assigned user (if applicable)
                 .FirstOrDefaultAsync(t => t.Id == id);
 
-            if (appTask == null) {
+            if (appTask == null)
+            {
                 return NotFound();
             }
+			var isAssigned = appTask.Users.Any(u => u.Id == userId);
+			var isAdmin = User.IsInRole("Admin");
 
-            return View(appTask);
+			ViewBag.IsAssigned = isAssigned;
+			ViewBag.IsAdmin = isAdmin;
+            ViewBag.IsAssignedToProjects = isAssignedToProjects;
+			return View(appTask);
         }
-
         [HttpPost]
         [Authorize(Roles = "User,Admin")]
         public IActionResult Show([FromForm] Comment comment)
         {
+            var userId = _userManager.GetUserId(User);
             comment.DateAdd = DateTime.Now;
-
+            var appTask = db.AppTasks
+        .Include(t => t.Comments)
+            .ThenInclude(c => c.User)
+        .Include(t => t.Project)
+            .ThenInclude(p => p.ApplicationUsers)
+        .Include(t => t.Users)
+        .FirstOrDefault(t => t.Id == comment.AppTaskId);
+            var isAssigned = db.AppTasks.Where(t => t.Id == comment.AppTaskId).SelectMany(t => t.Users).Any(u => u.Id == userId);
+            var isAssignedToProjects = appTask.Project.ApplicationUsers.Any(u => u.Id == userId);
+            var isAdmin = User.IsInRole("Admin");
+            if (!isAssigned && !isAdmin&&!isAssignedToProjects)
+            {
+                TempData["message"] = "Nu aveti dreptul sa adaugati comentariul";
+                TempData["messageType"] = "alert-danger";
+                return Redirect($"/AppTasks/Show/{comment.AppTaskId}");
+            }
             // preluam Id-ul utilizatorului care posteaza comentariul
-            comment.UserId = _userManager.GetUserId(User);
+            comment.UserId = userId;
 
             if (ModelState.IsValid)
             {
@@ -213,35 +326,63 @@ namespace TaskFlow.Controllers {
                 db.SaveChanges();
                 return Redirect("/AppTasks/Show/" + comment.AppTaskId);
             }
-            else 
+            else
             {
-                AppTask appTask = db.AppTasks
-                .Include(t => t.Comments) // Include related comments if they exist
-                .Include(t => t.Project) // Include the related project
-                .Include(t => t.Users) // Include assigned user (if applicable)
-                .Where(art => art.Id == comment.AppTaskId)
-                .First();
-
-                //return Redirect("/Articles/Show/" + comm.ArticleId);
+                appTask = db.AppTasks
+                .Include(t => t.Comments)
+                .ThenInclude(c => c.User)
+                .Include(t => t.Project)
+                .Include(t => t.Users)
+                .FirstOrDefault(appTask => appTask.Id == comment.AppTaskId);
 
 
                 return View(appTask);
             }
         }
 
-        public IActionResult Delete(int id) {
+
+
+
+
+        public IActionResult Delete(int id)
+        {
             var appTask = db.AppTasks.Find(id);
             var project = db.Projects.Find(appTask.ProjectId);
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (project.OwnerId != userId && !User.IsInRole("Admin")) {
+            if (project.OwnerId != userId && !User.IsInRole("Admin"))
+            {
                 return Forbid(); // Nu are permisiunea
             }
-            if (appTask != null) {
+            if (appTask != null)
+            {
+                var comments = db.Comments.Where(c => c.AppTaskId == id).ToList();
+                db.Comments.RemoveRange(comments);
                 db.AppTasks.Remove(appTask);
                 db.SaveChanges();
                 TempData["message"] = "Task-ul a fost sters";
             }
             return RedirectToAction("Show", "Projects", new { id = project.Id });
+        }
+
+        [HttpPost]
+        public IActionResult UpdateStatus([FromBody] TaskUpdateModel model)
+        {
+            var task = db.AppTasks.FirstOrDefault(t => t.Id == model.TaskId);
+            if (task == null)
+            {
+                return NotFound();
+            }
+
+            task.Status = model.NewStatus;
+            db.SaveChanges();
+
+            return Json(new { success = true, taskId = task.Id, newStatus = task.Status });
+        }
+
+        public class TaskUpdateModel
+        {
+            public int TaskId { get; set; }
+            public string NewStatus { get; set; }
         }
 
     }

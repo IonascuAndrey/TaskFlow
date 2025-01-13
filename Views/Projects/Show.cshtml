@@ -1,29 +1,108 @@
 ﻿@model TaskFlow.Models.Project
-
-<h2>@Model.Title</h2
+@inject Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> UserManager
+@{
+	var totalImages = 22;
+	var random = new Random();
+}
+<div class="background" id="background"></div>
+<div class="content">
+<h2>@Model.Title</h2>
 <p>@Model.Description</p>
-
-<h3>Tasks</h3>
+<p><strong>Assigned Users:</strong></p>
 <ul>
-    @foreach (var task in Model.AppTasks)
+    @foreach (var user in Model.ApplicationUsers)
     {
-        <li>@task.Title</li>
-        <td>
-            <!-- Show button -->
-            <a href="@Url.Action("Show", "AppTasks", new { id = task.Id })" class="btn btn-info">Show</a>
-        </td>
-
-        <td>
-            <!-- Edit button -->
-            <a href="@Url.Action("Edit", "AppTasks", new { id = task.Id })" class="btn btn-warning">Edit</a>
-        </td>
-
-        <td>
-            <!-- Delete button -->
-            <form action="@Url.Action("Delete", "AppTasks", new { id = task.Id })" method="post" onsubmit="return confirm('Are you sure you want to delete this task?');">
-                <button type="submit" class="btn btn-danger">Delete</button>
-            </form>
-        </td>
-    }
+        @if (!(await UserManager.IsInRoleAsync(user, "Admin")))
+        {
+        <li>@user.FirstName @user.LastName (@user.Email)</li>
+    }}
 </ul>
-<a href="@Url.Action("New", "AppTasks", new { projectId = Model.Id })" class="btn btn-primary">Create Task</a>
+
+
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="~/css/tasks.css" />
+    <script src="~/js/javascript.js"></script>
+</head>
+<body>
+     <div><a href="@Url.Action("New", "AppTasks", new { projectId = Model.Id })" class="btn btn-primary">Create Task</a></div>
+    
+    <div class="board">
+        <div class="lanes">
+            <div class="swim-lane" id="Not Started">
+                <h3 class="heading">Not started</h3>
+               @foreach (var task in Model.AppTasks.Where(t => t.Status == "Not Started"))
+        {
+            <div class="task" draggable="true" data-id="@task.Id">
+               <div> @task.Title</div>
+            <div>@task.Status</div>
+						<div><a href="@Url.Action("Show", "AppTasks",new{id=task.Id} )" class="btn btn-primary">View</a></div>
+					</div>
+                }
+            </div>
+
+            <div class="swim-lane"  id="In Progress">
+                <h3 class="heading">In progress</h3>
+                 @foreach (var task in Model.AppTasks.Where(t => t.Status == "In Progress"))
+        {
+            <div class="task" draggable="true" data-id="@task.Id">
+             <div> @task.Title</div>
+            <div>@task.Status</div>
+						<div><a href="@Url.Action("Show", "AppTasks",new{id=task.Id})" class="btn btn-primary">View</a></div>
+					</div>
+                }
+            </div>
+
+            <div class="swim-lane"  id="Completed">
+                <h3 class="heading">Completed</h3>
+                @foreach (var task in Model.AppTasks.Where(t => t.Status == "Completed"))
+        {
+             <div class="task" draggable="true" data-id="@task.Id">
+              <div> @task.Title</div>
+            <div>@task.Status</div>
+						<div><a href="@Url.Action("Show", "AppTasks", new{id=task.Id} )" class="btn btn-primary">View</a></div>
+					</div>
+
+                }
+            </div>
+            </div>
+        </div>
+       
+</body>
+</html>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var totalImages = 22;
+        var randomImageNumber = Math.floor(Math.random() * totalImages) + 1; 
+        var imageUrl = '@Url.Content("~/images/")' + randomImageNumber + '.jpg'; 
+        document.getElementById('background').style.backgroundImage = 'url(' + imageUrl + ')'; 
+        document.getElementById('background').style.backgroundSize = 'cover';
+        document.getElementById('background').style.backgroundPosition = 'center';
+        document.getElementById('background').style.filter = 'blur(8px)';
+        document.getElementById('background').style.zIndex = '-1';
+    });
+</script>
+<style>
+.background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+    .content {
+        position: relative;
+        z-index: 1; 
+        padding: 20px;
+        max-width: 800px;
+        margin: 0 auto;
+        background-color: rgba(255, 255, 255, 0.8); 
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+</style>

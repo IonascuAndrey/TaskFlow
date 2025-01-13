@@ -12,7 +12,7 @@ namespace TaskFlow.Models {
         public string Title { get; set; }
         [StringLength(200, ErrorMessage = "The description must be shorter than 200 characters")]
         public string? Description { get; set; }
-        public string Status { get; set; }
+        public string Status { get; set; } = "Not Started";
         public DateTime DateStart { get; set; }
         public DateTime DateEnd { get; set; }
         public string? Media { get; set; }

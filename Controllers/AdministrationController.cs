@@ -19,13 +19,20 @@ namespace TaskFlow.Controllers {
             _roleManager = roleManager;
         }
         [Authorize(Roles = "Admin")]
-        public IActionResult Index() {
-            if (TempData.ContainsKey("message")) {
+        public IActionResult Index()
+        {
+            if (TempData.ContainsKey("message"))
+            {
                 ViewBag.Message = TempData["message"].ToString();
             }
+
             var userId = _userManager.GetUserId(User);
-            var userProjects = db.Projects
-                .ToList();
+
+            var isAdmin = User.IsInRole("Admin");
+
+            var userProjects = isAdmin
+                ? db.Projects.Include(p => p.Owner).ToList()  
+                : db.Projects.Where(p => p.OwnerId == userId).Include(p => p.Owner).ToList(); 
 
             ViewBag.Projects = userProjects;
             return View();
